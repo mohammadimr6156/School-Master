@@ -1,2 +1,2 @@
 pywebview
-pyinstaller
+openpyxl

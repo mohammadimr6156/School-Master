@@ -309,7 +309,7 @@
                     <h2>سیستم برنامه‌ریزی و چاپ</h2>
                     <div style="display:flex; gap:15px; align-items: center;">
                         <button class="btn btn-success" id="btn_auto_sched" onclick="runAutoScheduler()">✨ چیدمان خودکار</button>
-                        <button class="btn" onclick="window.print()">🖨️ چاپ</button>
+                        <button class="btn btn-primary" onclick="exportToExcel()">📥 خروجی اکسل</button>
                         <select id="tt_view_mode" onchange="switchTTMode()">
                             <option value="overall_edit">برنامه کلی مدرسه (ویرایش و چیدمان)</option>
                             <option value="class_view">برنامه کلاس‌ها (نمایش و چاپ)</option>
@@ -583,9 +583,10 @@
                         html += `<td class="drop-target" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${cls.id}', '${d}', ${p})">`;
                         
                         // Render placed items
-                        const tts = db.timetable.filter(t=>t.day===d && t.period===p && db.allocations.find(a=>a.id===t.allocationId).classId===cls.id);
+                        const tts = db.timetable.filter(t => t.day == d && t.period == p && db.allocations.find(a=>a.id===t.allocationId)?.classId === cls.id);
                         tts.forEach(t => {
                             const alloc = db.allocations.find(a=>a.id===t.allocationId);
+                            if(!alloc) return;
                             const crs = db.courses.find(c=>c.id===alloc.courseId);
                             const tch = db.teachers.find(tch=>tch.id===alloc.teacherId);
                             const loc = db.locations.find(l=>l.id===t.locationId);
@@ -594,9 +595,9 @@
                             html += `
                             <div class="placed-item ${typeClass}">
                                 <button class="del-btn" onclick="delTT('${t.id}')">✕</button>
-                                <b>${crs.name} ${wStr}</b>
-                                <small>${tch.name}</small>
-                                <small>${loc?loc.name:'-'}</small>
+                                <b>${crs ? crs.name : '?'} ${wStr}</b>
+                                <small>${tch ? tch.name : '?'}</small>
+                                <small>${loc ? loc.name : '-'}</small>
                             </div>`;
                         });
                         html += `</td>`;
@@ -626,16 +627,17 @@
                 const rem = reqBells - placedBells;
 
                 const isLocked = rem <= 0;
-                if(!isLocked) activeCards++;
+                if(isLocked) return;
+                activeCards++;
 
                 cont.innerHTML += `
-                <div class="alloc-card ${isLocked ? 'locked' : ''}" 
-                     draggable="${!isLocked}" 
+                <div class="alloc-card" 
+                     draggable="true" 
                      ondragstart="onDragStart(event, '${alloc.id}', ${rem})">
                     <h4>${crs.name}</h4>
                     <p>کلاس: <b>${cls.name}</b></p>
                     <p>دبیر: <b>${tch.name}</b></p>
-                    <p>مانده: <span class="chip primary">${rem > 0 ? rem + ' زنگ' : 'تکمیل'}</span></p>
+                    <p>مانده: <span class="chip primary">${rem + ' زنگ'}</span></p>
                 </div>`;
             });
 
@@ -796,6 +798,20 @@
                 html += `</tbody></table></div>`;
                 v.innerHTML += html;
             });
+        }
+
+        async function exportToExcel() {
+            try {
+                const res = await window.pywebview.api.export_to_excel(db);
+                if(res.success) {
+                    alert(res.message);
+                } else {
+                    alert(res.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("خطا در ایجاد خروجی اکسل.");
+            }
         }
 
         /* --- Auto Scheduler Algorithm --- */
