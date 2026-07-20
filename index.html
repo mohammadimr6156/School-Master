@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Master - هوشمند</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a; --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6; --primary-hover: #2563eb; --accent: #8b5cf6;
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Vazirmatn', sans-serif; }
+        body {
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            background-attachment: fixed; color: var(--text-main);
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .header {
+            padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;
+            background: var(--glass-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(to left, var(--primary), var(--accent)); -webkit-background-clip: text; color: transparent; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar {
+            width: 220px; background: var(--glass-bg); backdrop-filter: blur(12px);
+            border-left: 1px solid var(--glass-border); padding: 20px 0; display: flex; flex-direction: column; gap: 5px;
+            flex-shrink: 0; overflow-y: auto;
+        }
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted); padding: 12px 20px;
+            text-align: right; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;
+        }
+        .nav-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
+        .nav-btn.active { color: var(--text-main); font-weight: 600; background: rgba(59, 130, 246, 0.1); border-right: 4px solid var(--primary); }
+        .content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
+        
+        .card {
+            background: var(--glass-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;
+            margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        h2 { font-size: 1.25rem; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { font-size: 0.85rem; color: var(--text-muted); }
+        input[type="text"], input[type="number"], select {
+            background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); color: var(--text-main);
+            padding: 10px 14px; border-radius: 8px; outline: none; transition: all 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        
+        .btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main);
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: var(--danger); color: white; }
+        .btn-success { background: linear-gradient(135deg, var(--success), #059669); border: none; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 10px; text-align: right; border-bottom: 1px solid var(--glass-border); }
+        th { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+        
+        .chip { background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; display: inline-block; margin: 2px; }
+        .chip.primary { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
+        
+        .check-list { display: flex; flex-wrap: wrap; gap: 12px; }
+        .check-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .check-item input { accent-color: var(--primary); width: 16px; height: 16px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { width: 450px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
+
+        [data-tab-content] { display: none; }
+        [data-tab-content].active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .mt-4 { margin-top: 1rem; } .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Drag & Drop Visual Planner Styles */
+        .planner-layout { display: flex; height: calc(100vh - 200px); gap: 20px; overflow: hidden; }
+        
+        .master-grid-container { flex: 1; overflow: auto; background: var(--glass-bg); border-radius: 12px; border: 1px solid var(--glass-border); }
+        .master-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.85rem; }
+        .master-table th { background: rgba(255,255,255,0.05); position: sticky; top: 0; z-index: 10; text-align: center; border-bottom: 2px solid var(--glass-border); border-left: 1px solid var(--glass-border); padding: 8px;}
+        .master-table td { border-bottom: 1px solid var(--glass-border); border-left: 1px dashed var(--glass-border); padding: 0; min-width: 120px; height: 80px; position: relative; }
+        .master-table td.drop-target { background: rgba(15, 23, 42, 0.4); transition: background 0.2s; }
+        .master-table td.drop-target.drag-over { background: rgba(59, 130, 246, 0.2); }
+        .master-table td.row-header { background: rgba(255,255,255,0.02); font-weight: bold; position: sticky; right: 0; z-index: 5; border-left: 2px solid var(--glass-border); padding: 10px; }
+        
+        .placed-item {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; padding: 6px; margin: 4px;
+            font-size: 0.75rem; position: relative; display: flex; flex-direction: column; gap: 2px;
+        }
+        .placed-item.even { border-color: var(--success); background: rgba(16, 185, 129, 0.15); }
+        .placed-item.odd { border-color: var(--warning); background: rgba(245, 158, 11, 0.15); }
+        .placed-item b { color: var(--text-main); font-size: 0.8rem; }
+        .placed-item small { color: var(--text-muted); font-size: 0.7rem; }
+        .placed-item .del-btn { position: absolute; left: 4px; top: 4px; background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; }
+        
+        /* Drawer Panel */
+        .drawer {
+            width: 300px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 12px; display: flex; flex-direction: column;
+            transition: all 0.3s ease; flex-shrink: 0;
+        }
+        .drawer.hidden { display: none; }
+        .drawer-header { padding: 15px; border-bottom: 1px solid var(--glass-border); font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .drawer-content { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        
+        .alloc-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+            padding: 12px; cursor: grab; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .alloc-card:active { cursor: grabbing; }
+        .alloc-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); transform: translateY(-2px); }
+        .alloc-card.locked { opacity: 0.5; cursor: not-allowed; border-color: rgba(255,255,255,0.05); filter: grayscale(1); transform: none; box-shadow: none; }
+        .alloc-card h4 { margin-bottom: 4px; font-size: 0.9rem; }
+        .alloc-card p { font-size: 0.75rem; color: var(--text-muted); margin: 2px 0; }
+        
+        /* Teacher Availability Matrix */
+        .tch-matrix { display: grid; gap: 4px; margin-top: 10px; }
+        .tch-cell {
+            background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--glass-border); border-radius: 4px;
+            padding: 6px; text-align: center; cursor: pointer; font-size: 0.8rem;
+        }
+        .tch-cell:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+        .tch-cell.unavailable { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); text-decoration: line-through; }
+
+        .print-view-container { display: flex; flex-direction: column; gap: 30px; }
+        .print-table-wrapper { background: var(--glass-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border); }
+        .print-table-wrapper h3 { margin-bottom: 10px; color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+
+        @media print {
+            .sidebar, .header, .drawer, .btn, select, .drawer-toggle-btn { display: none !important; }
+            .content, .main-container { overflow: visible; height: auto; display: block; }
+            body { background: white; color: black; }
+            .card, .master-grid-container { border: none; box-shadow: none; background: transparent; }
+            th, td { border: 1px solid #ccc !important; color: black !important; }
+            .placed-item { border: 1px solid #999; background: #eee !important; color: black; }
+            .placed-item small { color: #555; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>School Master <span style="font-size: 0.9rem; font-weight:300; color:var(--text-muted)">سیستم هوشمند برنامه‌ریزی مدرسه</span></h1>
+        <button class="btn btn-danger" onclick="resetAll()">حذف کل اطلاعات</button>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <button class="nav-btn active" data-tab="settings">تنظیمات پایه</button>
+            <button class="nav-btn" data-tab="locations">مکان‌ها</button>
+            <button class="nav-btn" data-tab="classes">کلاس‌ها</button>
+            <button class="nav-btn" data-tab="courses">دروس</button>
+            <button class="nav-btn" data-tab="teachers">دبیران</button>
+            <button class="nav-btn" data-tab="allocation">تخصیص دروس</button>
+            <button class="nav-btn" data-tab="timetable">جدول برنامه‌ریزی و چاپ</button>
+        </aside>
+
+        <main class="content">
+            <!-- 1. Settings -->
+            <div data-tab-content="settings" class="active">
+                <div class="card">
+                    <h2>تنظیمات ساختار زمانی</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label>تعداد زنگ در روز</label><input type="number" id="set_periods" min="1" max="8"></div>
+                        <div class="form-group"><label>ارزش هر زنگ کامل (ساعت)</label><input type="number" id="set_hours" step="0.5" value="2"></div>
+                        <div class="form-group full"><label>روزهای کاری</label><div class="check-list" id="set_days_container"></div></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">ذخیره تنظیمات</button>
+                </div>
+            </div>
+
+            <!-- 2. Locations -->
+            <div data-tab-content="locations">
+                <div class="card">
+                    <h2>افزودن مکان برگزاری</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label>نام مکان</label><input type="text" id="loc_name" placeholder="مثال: کلاس 101 یا کارگاه برق"></div>
+                        <div class="form-group"><label>نوع مکان</label>
+                            <select id="loc_type">
+                                <option value="کلاس">کلاس معمولی</option>
+                                <option value="کارگاه">کارگاه</option>
+                                <option value="آزمایشگاه">آزمایشگاه</option>
+                                <option value="سایت">سایت کامپیوتر</option>
+                                <option value="ورزشگاه">ورزشگاه/حیاط</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="addLocation()">ثبت مکان</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>نام مکان</th><th>نوع</th><th>عملیات</th></tr></thead>
+                        <tbody id="tb_locations"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Classes -->
+            <div data-tab-content="classes">
+                <div class="card">
+                    <h2>تعریف کلاس</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label>نام کلاس</label><input type="text" id="cls_name"></div>
+                        <div class="form-group"><label>پایه</label><select id="cls_grade" onchange="handleDynamicSelect(this, 'grades')"></select></div>
+                        <div class="form-group"><label>رشته</label><select id="cls_major" onchange="handleDynamicSelect(this, 'majors')"></select></div>
+                        <div class="form-group"><label>مکان پیش‌فرض برگزاری</label><select id="cls_def_loc"></select></div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="addClass()">ثبت کلاس</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>کلاس</th><th>پایه</th><th>رشته</th><th>مکان پیش‌فرض</th><th>عملیات</th></tr></thead>
+                        <tbody id="tb_classes"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Courses -->
+            <div data-tab-content="courses">
+                <div class="card">
+                    <h2>تعریف درس</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label>نام درس</label><input type="text" id="crs_name"></div>
+                        <div class="form-group"><label>تعداد ساعت در هفته (۲ ساعت = ۱ زنگ)</label><input type="number" id="crs_hours" min="0.5" step="0.5" value="2"></div>
+                        <div class="form-group"><label>مکان مورد نیاز برای این درس</label>
+                            <select id="crs_req_loc_type">
+                                <option value="پیش‌فرض">پیش‌فرض کلاس (عادی)</option>
+                                <option value="کارگاه">کارگاه</option>
+                                <option value="آزمایشگاه">آزمایشگاه</option>
+                                <option value="سایت">سایت کامپیوتر</option>
+                                <option value="ورزشگاه">ورزشگاه/حیاط</option>
+                            </select>
+                        </div>
+                        <div class="form-group full"><label>ارائه به کلاس‌های:</label><div class="check-list" id="crs_classes_container"></div></div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="addCourse()">ثبت درس</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>درس</th><th>ساعت</th><th>مکان مورد نیاز</th><th>کلاس‌ها</th><th>عملیات</th></tr></thead>
+                        <tbody id="tb_courses"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. Teachers -->
+            <div data-tab-content="teachers">
+                <div class="card">
+                    <h2>تعریف دبیر</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label>نام دبیر</label><input type="text" id="tch_name"></div>
+                        <div class="form-group"><label>نوع</label><select id="tch_type"><option>دبیر</option><option>هنرآموز</option></select></div>
+                        <div class="form-group"><label>موظف (ساعت)</label><input type="number" id="tch_req" value="24"></div>
+                        <div class="form-group full">
+                            <label>عدم حضور در زنگ‌ها (برای ثبت عدم حضور کلیک کنید)</label>
+                            <div id="tch_matrix" class="tch-matrix"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="addTeacher()">ثبت دبیر</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>نام</th><th>نوع</th><th>موظف</th><th>عدم حضور</th><th>عملیات</th></tr></thead>
+                        <tbody id="tb_teachers"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 6. Allocation -->
+            <div data-tab-content="allocation">
+                <div class="card" style="display:flex; gap:20px; min-height:400px;">
+                    <div style="flex:1;">
+                        <h2>۱. انتخاب دبیر</h2>
+                        <select id="alloc_tch_sel" style="width:100%" onchange="loadAllocationView()"></select>
+                        <div id="alloc_stats" style="margin-top:15px; font-size:0.9rem; color:var(--text-muted);"></div>
+                        <h3 style="margin-top:20px; font-size:1rem;">دروس تخصیص یافته:</h3>
+                        <ul id="alloc_assigned" style="padding-right:20px; margin-top:10px; font-size:0.9rem;"></ul>
+                    </div>
+                    <div style="flex:2; border-right:1px solid var(--glass-border); padding-right:20px;">
+                        <h2>۲. انتخاب دروس</h2>
+                        <div class="check-list" id="alloc_unassigned" style="flex-direction:column;"></div>
+                        <button class="btn btn-primary mt-4" style="width:100%" onclick="saveAllocations()">ثبت انتخاب‌ها</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Unified Timetable & Reports -->
+            <div data-tab-content="timetable">
+                <div class="flex-between card" style="padding:15px 24px; margin-bottom: 15px;">
+                    <h2>سیستم برنامه‌ریزی و چاپ</h2>
+                    <div style="display:flex; gap:15px; align-items: center;">
+                        <button class="btn btn-success" id="btn_auto_sched" onclick="runAutoScheduler()">✨ چیدمان خودکار</button>
+                        <button class="btn" onclick="window.print()">🖨️ چاپ</button>
+                        <select id="tt_view_mode" onchange="switchTTMode()">
+                            <option value="overall_edit">برنامه کلی مدرسه (ویرایش و چیدمان)</option>
+                            <option value="class_view">برنامه کلاس‌ها (نمایش و چاپ)</option>
+                            <option value="teacher_view">برنامه دبیران (نمایش و چاپ)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 7.a. Overall Edit View (Master Grid + Drawer) -->
+                <div id="view_overall_edit" style="display:none; flex-direction:column; gap:15px;">
+                    <button class="btn drawer-toggle-btn" onclick="toggleDrawer()" style="align-self:flex-start;">
+                        تغییر وضعیت نوار کارت‌ها 🗃️
+                    </button>
+                    <div class="planner-layout">
+                        <!-- Master Grid -->
+                        <div class="master-grid-container">
+                            <table class="master-table" id="master_grid">
+                                <!-- Rendered via JS -->
+                            </table>
+                        </div>
+                        
+                        <!-- Cards Drawer -->
+                        <div class="drawer" id="cards_drawer">
+                            <div class="drawer-header">کارت‌های آماده جایگذاری <span class="chip primary" id="cards_count">0</span></div>
+                            <div class="drawer-content" id="cards_container">
+                                <!-- Cards rendered via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7.b. Readonly Class/Teacher Views -->
+                <div id="view_readonly" class="print-view-container" style="display:none;"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Drop Modal -->
+    <div class="modal-overlay" id="drop_modal">
+        <div class="card modal">
+            <h2 id="drop_modal_title">تایید جایگذاری درس</h2>
+            <div style="margin-top:20px; font-size:0.9rem;" id="drop_modal_info"></div>
+            
+            <div class="form-group mt-4" id="drop_week_type_group">
+                <label>نوع هفته (نیاز به نیم‌زنگ چرخشی)</label>
+                <select id="drop_week_type">
+                    <option value="even">فقط هفته زوج</option>
+                    <option value="odd">فقط هفته فرد</option>
+                </select>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label>مکان برگزاری</label>
+                <select id="drop_location"></select>
+            </div>
+            
+            <div class="flex-between mt-4">
+                <button class="btn btn-danger" onclick="closeDropModal()">انصراف</button>
+                <button class="btn btn-success" onclick="confirmDrop()">تایید و ثبت</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = {
+            settings: { days: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه'], periodsCount: 4, hoursPerPeriod: 2 },
+            grades: [], majors: [], locations: [], classes: [], courses: [], teachers: [], allocations: [], timetable: []
+        };
+        const allDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه'];
+        
+        const uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const calculateBells = (hours) => hours / db.settings.hoursPerPeriod;
+
+        window.addEventListener('pywebviewready', async () => {
+            try {
+                const data = await window.pywebview.api.get_all_data();
+                if(data) db = data;
+                if(!db.locations) db.locations = [];
+                initUI();
+            } catch (err) { console.error(err); alert("خطا در ارتباط با سرور"); }
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('[data-tab-content]').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelector(`[data-tab-content="${e.target.dataset.tab}"]`).classList.add('active');
+                refreshTab(e.target.dataset.tab);
+            });
+        });
+
+        function refreshTab(tab) {
+            if(tab === 'settings') renderSettings();
+            if(tab === 'locations') renderLocations();
+            if(tab === 'classes') { renderClasses(); updateClassSelects(); }
+            if(tab === 'courses') { renderCourses(); renderCourseClassesCheckboxes(); }
+            if(tab === 'teachers') { renderTeachers(); renderTeacherMatrixInput(); }
+            if(tab === 'allocation') loadAllocationTeacherSel();
+            if(tab === 'timetable') switchTTMode();
+        }
+
+        function initUI() { refreshTab('settings'); }
+
+        async function resetAll() {
+            if(confirm('حذف کامل تمام اطلاعات؟')) { await window.pywebview.api.clear_all_data(); location.reload(); }
+        }
+
+        /* ------------------ 1-6. Standard CRUD Logic ------------------ */
+        function renderSettings() {
+            document.getElementById('set_periods').value = db.settings.periodsCount;
+            document.getElementById('set_hours').value = db.settings.hoursPerPeriod;
+            const c = document.getElementById('set_days_container'); c.innerHTML = '';
+            allDays.forEach(d => {
+                const checked = db.settings.days.includes(d) ? 'checked' : '';
+                c.innerHTML += `<label class="check-item"><input type="checkbox" value="${d}" ${checked}> ${d}</label>`;
+            });
+        }
+        async function saveSettings() {
+            db.settings.periodsCount = parseInt(document.getElementById('set_periods').value) || 4;
+            db.settings.hoursPerPeriod = parseFloat(document.getElementById('set_hours').value) || 2;
+            const chk = Array.from(document.getElementById('set_days_container').querySelectorAll('input:checked'));
+            db.settings.days = chk.map(i => i.value);
+            await window.pywebview.api.save_settings({ settings: db.settings }); alert('ذخیره شد.');
+        }
+
+        async function addLocation() {
+            const name = document.getElementById('loc_name').value.trim(); const type = document.getElementById('loc_type').value;
+            if(!name) return; db.locations.push({ id: uid(), name, type });
+            await window.pywebview.api.save_locations(db.locations); document.getElementById('loc_name').value = ''; renderLocations();
+        }
+        function renderLocations() {
+            const tb = document.getElementById('tb_locations'); tb.innerHTML = '';
+            db.locations.forEach(l => { tb.innerHTML += `<tr><td>${l.name}</td><td>${l.type||'عادی'}</td><td><button class="btn btn-danger" onclick="delObj('locations','${l.id}')">حذف</button></td></tr>`; });
+        }
+
+        function updateClassSelects() {
+            const fill = (id, list) => {
+                const el = document.getElementById(id); el.innerHTML = '<option value="">-- انتخاب --</option>';
+                list.forEach(i => el.innerHTML += `<option value="${i}">${i}</option>`); el.innerHTML += `<option value="_new_" style="font-weight:bold">+ جدید...</option>`;
+            };
+            fill('cls_grade', db.grades); fill('cls_major', db.majors);
+            const defLoc = document.getElementById('cls_def_loc'); defLoc.innerHTML = '<option value="">-- فاقد مکان پیش‌فرض --</option>';
+            db.locations.forEach(l => defLoc.innerHTML += `<option value="${l.id}">${l.name} (${l.type})</option>`);
+        }
+        async function handleDynamicSelect(el, listName) {
+            if(el.value === '_new_') { const val = prompt('عنوان جدید:'); if(val && val.trim()) { db[listName].push(val.trim()); await window.pywebview.api.save_settings({ [listName]: db[listName] }); updateClassSelects(); el.value = val.trim(); } else el.selectedIndex = 0; }
+        }
+        async function addClass() {
+            const name = document.getElementById('cls_name').value.trim(); const grade = document.getElementById('cls_grade').value; const major = document.getElementById('cls_major').value; const defaultLocationId = document.getElementById('cls_def_loc').value;
+            if(!name || !grade || !major || grade==='_new_' || major==='_new_') return alert('کامل کنید');
+            db.classes.push({ id: uid(), name, grade, major, defaultLocationId });
+            await window.pywebview.api.save_classes(db.classes); document.getElementById('cls_name').value = ''; renderClasses();
+        }
+        function renderClasses() {
+            const tb = document.getElementById('tb_classes'); tb.innerHTML = '';
+            db.classes.forEach(c => {
+                const loc = db.locations.find(l=>l.id===c.defaultLocationId);
+                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.grade}</td><td>${c.major}</td><td>${loc?loc.name:'-'}</td><td><button class="btn btn-danger" onclick="delObj('classes','${c.id}')">حذف</button></td></tr>`;
+            });
+        }
+
+        function renderCourseClassesCheckboxes() {
+            const c = document.getElementById('crs_classes_container'); c.innerHTML = '';
+            db.classes.forEach(cls => { c.innerHTML += `<label class="check-item"><input type="checkbox" value="${cls.id}"> کلاس ${cls.name} (${cls.major})</label>`; });
+        }
+        async function addCourse() {
+            const name = document.getElementById('crs_name').value.trim(); const hours = parseFloat(document.getElementById('crs_hours').value); const requiredLocationType = document.getElementById('crs_req_loc_type').value; const chk = Array.from(document.getElementById('crs_classes_container').querySelectorAll('input:checked'));
+            if(!name || chk.length===0) return alert('نام و حداقل یک کلاس نیاز است');
+            db.courses.push({ id: uid(), name, hours, requiredLocationType, classes: chk.map(i=>i.value) });
+            await window.pywebview.api.save_courses(db.courses); document.getElementById('crs_name').value = ''; chk.forEach(i=>i.checked=false); renderCourses();
+        }
+        function renderCourses() {
+            const tb = document.getElementById('tb_courses'); tb.innerHTML = '';
+            db.courses.forEach(c => {
+                const clsNames = c.classes.map(id => db.classes.find(x=>x.id===id)?.name || '?').join('، ');
+                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.hours}</td><td>${c.requiredLocationType||'پیش‌فرض'}</td><td>${clsNames}</td><td><button class="btn btn-danger" onclick="delObj('courses','${c.id}')">حذف</button></td></tr>`;
+            });
+        }
+
+        let tchTempNotAvail = [];
+        function renderTeacherMatrixInput() {
+            tchTempNotAvail = []; const m = document.getElementById('tch_matrix'); m.style.gridTemplateColumns = `repeat(${db.settings.periodsCount}, 1fr)`; m.innerHTML = '';
+            db.settings.days.forEach(d => { for(let p=1; p<=db.settings.periodsCount; p++){ const k = `${d}-${p}`; m.innerHTML += `<div class="tch-cell" id="tch_cell_${k}" onclick="toggleTchAvail('${k}')">${d[0]} ز${p}</div>`; } });
+        }
+        function toggleTchAvail(k) {
+            const idx = tchTempNotAvail.indexOf(k); const el = document.getElementById(`tch_cell_${k}`);
+            if(idx > -1) { tchTempNotAvail.splice(idx,1); el.classList.remove('unavailable'); } else { tchTempNotAvail.push(k); el.classList.add('unavailable'); }
+        }
+        async function addTeacher() {
+            const name = document.getElementById('tch_name').value.trim(); if(!name) return; const type = document.getElementById('tch_type').value; const req = parseFloat(document.getElementById('tch_req').value) || 24;
+            db.teachers.push({ id: uid(), name, type, req, prefs: { notAvailable: [...tchTempNotAvail] } });
+            await window.pywebview.api.save_teachers(db.teachers); document.getElementById('tch_name').value = ''; renderTeacherMatrixInput(); renderTeachers();
+        }
+        function renderTeachers() {
+            const tb = document.getElementById('tb_teachers'); tb.innerHTML = '';
+            db.teachers.forEach(t => { tb.innerHTML += `<tr><td>${t.name}</td><td>${t.type}</td><td>${t.req}</td><td>${t.prefs.notAvailable?t.prefs.notAvailable.length:0} زنگ</td><td><button class="btn btn-danger" onclick="delObj('teachers','${t.id}')">حذف</button></td></tr>`; });
+        }
+
+        function loadAllocationTeacherSel() {
+            const sel = document.getElementById('alloc_tch_sel'); sel.innerHTML = '<option value="">-- انتخاب دبیر --</option>';
+            db.teachers.forEach(t => sel.innerHTML += `<option value="${t.id}">${t.name} (${t.type})</option>`); loadAllocationView();
+        }
+        function loadAllocationView() {
+            const tid = document.getElementById('alloc_tch_sel').value; const asgn = document.getElementById('alloc_assigned'); asgn.innerHTML = ''; const unasgn = document.getElementById('alloc_unassigned'); unasgn.innerHTML = ''; const st = document.getElementById('alloc_stats'); st.innerHTML = '';
+            if(!tid) return;
+            const t = db.teachers.find(x=>x.id===tid); const tAllocs = db.allocations.filter(a=>a.teacherId===tid); let totalHrs = 0;
+            tAllocs.forEach(a => { const crs = db.courses.find(c=>c.id===a.courseId); const cls = db.classes.find(c=>c.id===a.classId);
+                if(crs && cls) { totalHrs += crs.hours; asgn.innerHTML += `<li style="margin-bottom:5px;"><b>${crs.name}</b> کلاس ${cls.name} <span class="chip">${crs.hours} ساعت</span> <button style="border:none; background:none; color:var(--danger); cursor:pointer;" onclick="delAlloc('${a.id}')">✕</button></li>`; }
+            });
+            st.innerHTML = `موظف: ${t.req} ساعت | تخصیص: ${totalHrs} ساعت | مانده: ${t.req - totalHrs} ساعت`;
+            db.courses.forEach(crs => { crs.classes.forEach(cid => { const cls = db.classes.find(c=>c.id===cid); const isAlloc = db.allocations.some(a=>a.courseId===crs.id && a.classId===cid);
+                if(!isAlloc && cls) unasgn.innerHTML += `<label class="check-item card" style="padding:10px; margin-bottom:0;"><input type="checkbox" value="${crs.id}|${cid}"> <div><b>${crs.name}</b> کلاس ${cls.name} <div style="font-size:0.8rem; color:var(--text-muted)">${crs.hours} ساعت</div></div></label>`;
+            });});
+        }
+        async function saveAllocations() {
+            const tid = document.getElementById('alloc_tch_sel').value; if(!tid) return; const chk = document.getElementById('alloc_unassigned').querySelectorAll('input:checked'); if(chk.length===0) return;
+            chk.forEach(c => { const [crsId, clsId] = c.value.split('|'); db.allocations.push({ id: uid(), teacherId: tid, courseId: crsId, classId: clsId }); });
+            await window.pywebview.api.save_allocations(db.allocations); loadAllocationView();
+        }
+        async function delAlloc(id) { db.allocations = db.allocations.filter(a=>a.id!==id); db.timetable = db.timetable.filter(t=>t.allocationId!==id); await window.pywebview.api.save_allocations(db.allocations); await window.pywebview.api.save_timetable(db.timetable); loadAllocationView(); }
+
+        async function delObj(table, id) {
+            if(!confirm('حذف کامل؟')) return;
+            db[table] = db[table].filter(x => x.id !== id);
+            if(table==='locations') { db.classes.forEach(c => { if(c.defaultLocationId===id) c.defaultLocationId=null; }); db.timetable.forEach(t => { if(t.locationId===id) t.locationId=null; }); await window.pywebview.api.save_classes(db.classes); }
+            if(table==='classes') { db.courses.forEach(c => c.classes = c.classes.filter(cid => cid !== id)); db.allocations = db.allocations.filter(a => a.classId !== id); await window.pywebview.api.save_courses(db.courses); }
+            if(table==='courses') db.allocations = db.allocations.filter(a => a.courseId !== id);
+            if(table==='teachers') db.allocations = db.allocations.filter(a => a.teacherId !== id);
+            const validAllocIds = db.allocations.map(a => a.id); db.timetable = db.timetable.filter(t => validAllocIds.includes(t.allocationId));
+            await window.pywebview.api[`save_${table}`](db[table]); await window.pywebview.api.save_allocations(db.allocations); await window.pywebview.api.save_timetable(db.timetable);
+            refreshTab(table);
+        }
+
+        /* ------------------ 7. Unified Drag & Drop Timetable & Reports ------------------ */
+        function switchTTMode() {
+            const mode = document.getElementById('tt_view_mode').value;
+            const vEdit = document.getElementById('view_overall_edit');
+            const vRead = document.getElementById('view_readonly');
+            
+            if(mode === 'overall_edit') {
+                vEdit.style.display = 'flex'; vRead.style.display = 'none';
+                document.getElementById('btn_auto_sched').style.display = 'inline-flex';
+                renderMasterGrid();
+                renderCardsDrawer();
+            } else {
+                vEdit.style.display = 'none'; vRead.style.display = 'flex';
+                document.getElementById('btn_auto_sched').style.display = 'none';
+                renderReadonlyViews(mode);
+            }
+        }
+
+        function toggleDrawer() {
+            const d = document.getElementById('cards_drawer');
+            d.classList.toggle('hidden');
+        }
+
+        // --- Render Master Grid (Editable) ---
+        function renderMasterGrid() {
+            const m = document.getElementById('master_grid');
+            let html = `<thead><tr><th style="min-width:120px;">کلاس / روز</th>`;
+            db.settings.days.forEach(d => { html += `<th colspan="${db.settings.periodsCount}">${d}</th>`; });
+            html += `</tr><tr><th></th>`;
+            db.settings.days.forEach(d => { for(let p=1; p<=db.settings.periodsCount; p++) html += `<th>زنگ ${p}</th>`; });
+            html += `</tr></thead><tbody>`;
+
+            db.classes.forEach(cls => {
+                html += `<tr><td class="row-header">${cls.name}<br><small style="font-weight:normal">${cls.major}</small></td>`;
+                db.settings.days.forEach(d => {
+                    for(let p=1; p<=db.settings.periodsCount; p++) {
+                        html += `<td class="drop-target" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${cls.id}', '${d}', ${p})">`;
+                        
+                        // Render placed items
+                        const tts = db.timetable.filter(t=>t.day===d && t.period===p && db.allocations.find(a=>a.id===t.allocationId).classId===cls.id);
+                        tts.forEach(t => {
+                            const alloc = db.allocations.find(a=>a.id===t.allocationId);
+                            const crs = db.courses.find(c=>c.id===alloc.courseId);
+                            const tch = db.teachers.find(tch=>tch.id===alloc.teacherId);
+                            const loc = db.locations.find(l=>l.id===t.locationId);
+                            const typeClass = t.weekType === 'even' ? 'even' : t.weekType === 'odd' ? 'odd' : '';
+                            const wStr = t.weekType === 'even' ? '(زوج)' : t.weekType === 'odd' ? '(فرد)' : '';
+                            html += `
+                            <div class="placed-item ${typeClass}">
+                                <button class="del-btn" onclick="delTT('${t.id}')">✕</button>
+                                <b>${crs.name} ${wStr}</b>
+                                <small>${tch.name}</small>
+                                <small>${loc?loc.name:'-'}</small>
+                            </div>`;
+                        });
+                        html += `</td>`;
+                    }
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody>`;
+            m.innerHTML = html;
+        }
+
+        // --- Drawer & Cards Logic ---
+        function renderCardsDrawer() {
+            const cont = document.getElementById('cards_container');
+            cont.innerHTML = '';
+            let activeCards = 0;
+
+            db.allocations.forEach(alloc => {
+                const crs = db.courses.find(c=>c.id===alloc.courseId);
+                const cls = db.classes.find(c=>c.id===alloc.classId);
+                const tch = db.teachers.find(t=>t.id===alloc.teacherId);
+                if(!crs || !cls || !tch) return;
+
+                const reqBells = calculateBells(crs.hours);
+                const tts = db.timetable.filter(t=>t.allocationId===alloc.id);
+                const placedBells = ttts.reduce((s,t) => s + (t.weekType==='both'?1:0.5), 0);
+                const rem = reqBells - placedBells;
+
+                const isLocked = rem <= 0;
+                if(!isLocked) activeCards++;
+
+                cont.innerHTML += `
+                <div class="alloc-card ${isLocked ? 'locked' : ''}" 
+                     draggable="${!isLocked}" 
+                     ondragstart="onDragStart(event, '${alloc.id}', ${rem})">
+                    <h4>${crs.name}</h4>
+                    <p>کلاس: <b>${cls.name}</b></p>
+                    <p>دبیر: <b>${tch.name}</b></p>
+                    <p>مانده: <span class="chip primary">${rem > 0 ? rem + ' زنگ' : 'تکمیل'}</span></p>
+                </div>`;
+            });
+
+            document.getElementById('cards_count').innerText = activeCards;
+        }
+
+        /* --- Drag & Drop API --- */
+        let draggedAllocId = null;
+        let draggedRemBells = 0;
+
+        function onDragStart(e, allocId, remBells) {
+            draggedAllocId = allocId;
+            draggedRemBells = remBells;
+            e.dataTransfer.setData('text/plain', allocId);
+        }
+
+        function onDragOver(e) {
+            e.preventDefault();
+            const td = e.currentTarget;
+            if(!td.classList.contains('drag-over')) td.classList.add('drag-over');
+        }
+
+        function onDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function onDrop(e, targetClassId, day, period) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            if(!draggedAllocId) return;
+            const allocId = draggedAllocId;
+            const alloc = db.allocations.find(a=>a.id===allocId);
+            
+            if(alloc.classId !== targetClassId) {
+                alert("این درس متعلق به کلاس دیگری است!");
+                return;
+            }
+
+            // Start Drop Flow
+            processDrop(alloc, day, period, draggedRemBells);
+        }
+
+        let pendingDrop = null;
+        function processDrop(alloc, day, period, remBells) {
+            const crs = db.courses.find(c=>c.id===alloc.courseId);
+            const cls = db.classes.find(c=>c.id===alloc.classId);
+            
+            pendingDrop = { alloc, day, period, remBells, crs, cls };
+            
+            // Check teacher availability
+            const tchPrefs = db.teachers.find(t=>t.id===alloc.teacherId).prefs;
+            if(tchPrefs && tchPrefs.notAvailable && tchPrefs.notAvailable.includes(`${day}-${period}`)) {
+                if(!confirm("دبیر در این زمان عدم حضور ثبت کرده است. مایلید ادامه دهید؟")) return;
+            }
+
+            // Show Modal for Week Type and Location
+            const wGroup = document.getElementById('drop_week_type_group');
+            const wSel = document.getElementById('drop_week_type');
+            wSel.innerHTML = '';
+            
+            if(remBells >= 1) {
+                wSel.innerHTML += '<option value="both">هر دو هفته (زنگ کامل)</option>';
+                wGroup.style.display = 'none'; // Auto select both if it's full bell logic (simplification)
+                // Actually, let user choose if they want to split a full bell into two half bells?
+                // Let's hide it and force 'both' if rem >= 1 for speed. If they want half, they can change the course hours.
+                wSel.value = 'both';
+            } else {
+                wGroup.style.display = 'block';
+                wSel.innerHTML += '<option value="even">فقط هفته زوج</option><option value="odd">فقط هفته فرد</option>';
+            }
+
+            // Location Logic
+            const locSel = document.getElementById('drop_location'); locSel.innerHTML = '<option value="">-- بدون مکان --</option>';
+            let defLocId = null;
+            if(!crs.requiredLocationType || crs.requiredLocationType === 'پیش‌فرض') defLocId = cls.defaultLocationId;
+            else {
+                const ms = db.locations.filter(l=>l.type===crs.requiredLocationType);
+                if(ms.length>0) defLocId = ms[0].id;
+            }
+
+            db.locations.forEach(l => {
+                const s = l.id === defLocId ? 'selected' : '';
+                locSel.innerHTML += `<option value="${l.id}" ${s}>${l.name} (${l.type})</option>`;
+            });
+
+            document.getElementById('drop_modal_info').innerHTML = `جایگذاری <b>${crs.name}</b> در <b>${day} زنگ ${period}</b>`;
+            document.getElementById('drop_modal').style.display = 'flex';
+        }
+
+        async function confirmDrop() {
+            if(!pendingDrop) return;
+            const { alloc, day, period } = pendingDrop;
+            
+            let weekType = document.getElementById('drop_week_type').value;
+            // If group is hidden, we force 'both'
+            if(document.getElementById('drop_week_type_group').style.display === 'none') weekType = 'both';
+            
+            const locationId = document.getElementById('drop_location').value;
+
+            // Conflict Check
+            const isOverlap = (w1, w2) => (w1==='both' || w2==='both' || w1===w2);
+            const teacherBusy = db.timetable.find(t=> t.day===day && t.period===period && isOverlap(t.weekType, weekType) && db.allocations.find(a=>a.id===t.allocationId).teacherId===alloc.teacherId);
+            const classBusy = db.timetable.find(t=> t.day===day && t.period===period && isOverlap(t.weekType, weekType) && db.allocations.find(a=>a.id===t.allocationId).classId===alloc.classId);
+
+            if(teacherBusy || classBusy) {
+                if(!confirm('تداخل زمانی! کلاس یا دبیر پر است. آیا جایگزین/اضافه شود؟')) { closeDropModal(); return; }
+            }
+
+            db.timetable.push({ id: uid(), allocationId: alloc.id, day, period, weekType, locationId });
+            await window.pywebview.api.save_timetable(db.timetable);
+            closeDropModal();
+            renderMasterGrid();
+            renderCardsDrawer();
+        }
+
+        function closeDropModal() { document.getElementById('drop_modal').style.display = 'none'; pendingDrop = null; }
+
+        async function delTT(id) {
+            db.timetable = db.timetable.filter(t=>t.id!==id);
+            await window.pywebview.api.save_timetable(db.timetable);
+            renderMasterGrid();
+            renderCardsDrawer();
+        }
+
+        // --- Readonly Views (Printable) ---
+        function renderReadonlyViews(mode) {
+            const v = document.getElementById('view_readonly'); v.innerHTML = '';
+            const items = mode === 'class_view' ? db.classes : db.teachers;
+
+            items.forEach(target => {
+                let html = `<div class="print-table-wrapper">
+                    <h3>برنامه ${mode==='class_view' ? 'کلاس: ' : 'دبیر: '} ${target.name} ${target.major ? '('+target.major+')' : ''}</h3>
+                    <table><thead><tr><th>روز</th>`;
+                for(let p=1; p<=db.settings.periodsCount; p++) html += `<th>زنگ ${p}</th>`;
+                html += `</tr></thead><tbody>`;
+
+                db.settings.days.forEach(d => {
+                    html += `<tr><td><b>${d}</b></td>`;
+                    for(let p=1; p<=db.settings.periodsCount; p++) {
+                        let filterFn = t => t.day===d && t.period===p && (mode==='class_view' ? db.allocations.find(a=>a.id===t.allocationId).classId===target.id : db.allocations.find(a=>a.id===t.allocationId).teacherId===target.id);
+                        const tts = db.timetable.filter(filterFn);
+                        if(tts.length===0) html += `<td>-</td>`;
+                        else {
+                            let cellHtml = tts.map(t => {
+                                const a = db.allocations.find(x=>x.id===t.allocationId);
+                                const crs = db.courses.find(c=>c.id===a.courseId);
+                                const sub = mode==='class_view' ? db.teachers.find(tch=>tch.id===a.teacherId).name : db.classes.find(c=>c.id===a.classId).name;
+                                const loc = db.locations.find(l=>l.id===t.locationId);
+                                let wStr = t.weekType==='even' ? '(زوج)' : t.weekType==='odd' ? '(فرد)' : '';
+                                return `<div><b>${crs.name} ${wStr}</b><br><small>${sub}</small><br><small style="color:var(--primary)">${loc?loc.name:'-'}</small></div>`;
+                            }).join('<hr style="margin:5px 0; border:0; border-top:1px solid rgba(255,255,255,0.1)">');
+                            html += `<td>${cellHtml}</td>`;
+                        }
+                    }
+                    html += `</tr>`;
+                });
+                html += `</tbody></table></div>`;
+                v.innerHTML += html;
+            });
+        }
+
+        /* --- Auto Scheduler Algorithm --- */
+        async function runAutoScheduler() {
+            if(!confirm('برنامه قبلی پاک شده و از نو چیده می‌شود. مطمئن هستید؟')) return;
+            db.timetable = [];
+            
+            let items = [];
+            db.allocations.forEach(alloc => {
+                const crs = db.courses.find(c=>c.id===alloc.courseId);
+                const cls = db.classes.find(c=>c.id===alloc.classId);
+                const tch = db.teachers.find(t=>t.id===alloc.teacherId);
+                if(!crs || !cls || !tch) return;
+                
+                const bells = calculateBells(crs.hours);
+                let full = Math.floor(bells); let half = bells % 1 !== 0;
+
+                let accLocs = [];
+                if(crs.requiredLocationType === 'پیش‌فرض' || !crs.requiredLocationType) { if(cls.defaultLocationId) accLocs.push(cls.defaultLocationId); }
+                else accLocs = db.locations.filter(l => l.type === crs.requiredLocationType).map(l=>l.id);
+                
+                for(let i=0; i<full; i++) items.push({ alloc, weekType: 'both', crs, cls, tch, accLocs });
+                if(half) items.push({ alloc, weekType: 'any_half', crs, cls, tch, accLocs });
+            });
+
+            items.sort((a,b) => (b.tch.prefs.notAvailable?.length || 0) - (a.tch.prefs.notAvailable?.length || 0));
+
+            let state = [];
+            let MAX_ITER = 30000; let iters = 0;
+            const isOverlap = (w1, w2) => (w1==='both' || w2==='both' || w1===w2);
+            
+            function solve(idx) {
+                if(idx >= items.length) return true;
+                if(iters++ > MAX_ITER) return false;
+                
+                const item = items[idx];
+                for(let d of db.settings.days) {
+                    for(let p=1; p<=db.settings.periodsCount; p++) {
+                        if(item.tch.prefs.notAvailable && item.tch.prefs.notAvailable.includes(`${d}-${p}`)) continue;
+                        let possibleWeeks = item.weekType === 'any_half' ? ['even', 'odd'] : ['both'];
+                        
+                        for(let wt of possibleWeeks) {
+                            let tBusy = false, cBusy = false, locBusy = [];
+                            state.forEach(st => {
+                                if(st.day===d && st.period===p && isOverlap(st.weekType, wt)) {
+                                    const stA = db.allocations.find(a=>a.id===st.allocationId);
+                                    if(stA.teacherId === item.tch.id) tBusy = true;
+                                    if(stA.classId === item.cls.id) cBusy = true;
+                                    if(st.locationId) locBusy.push(st.locationId);
+                                }
+                            });
+                            if(tBusy || cBusy) continue;
+                            
+                            let chosenLocId = null;
+                            if(item.accLocs.length > 0) {
+                                chosenLocId = item.accLocs.find(lid => !locBusy.includes(lid));
+                                if(!chosenLocId) continue;
+                            }
+                            state.push({ id: uid(), allocationId: item.alloc.id, day: d, period: p, weekType: wt, locationId: chosenLocId });
+                            if(solve(idx+1)) return true;
+                            state.pop();
+                            if(iters > MAX_ITER) return false;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            if(solve(0)) {
+                db.timetable = state; alert("با موفقیت چیده شد!");
+            } else {
+                alert("تداخلات مانع از چیدمان کامل شد. پیشنهاد: کاهش محدودیت‌های دبیران.");
+            }
+            
+            await window.pywebview.api.save_timetable(db.timetable);
+            renderMasterGrid(); renderCardsDrawer();
+        }
+    </script>
+</body>
+</html>
