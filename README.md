@@ -1,4 +1,6 @@
-# School Master 🏫 (سیستم جامع برنامه‌ریزی مدرسه)
+# School Master 🏫
+### سیستم جامع برنامه‌ریزی مدرسه
+
 ![Version](https://img.shields.io/badge/Version-v1.1-007AFF?style=flat-square)
 
 سیستم هوشمند زمان‌بندی و برنامه‌ریزی یکپارچه مدارس با رابط کاربری مدرن (Glassmorphism) و قابلیت چیدمان خودکار (Auto-Scheduler).
@@ -23,6 +25,6 @@ python main.py
 - `index.html`: شامل تمام کدهای فرانت‌اند (HTML/CSS/JS) که رابط کاربری جذاب سیستم را می‌سازد.
 - `data.json`: فایل دیتابیس (پس از اولین اجرا به صورت خودکار ساخته می‌شود).
 
-## Developer
-- Name: MohammadiMR6156
-- Email: mohammadimr6156@gmail.com
+## توسعه‌دهنده
+- **نام:** MohammadiMR6156
+- **ایمیل:** mohammadimr6156@gmail.com
