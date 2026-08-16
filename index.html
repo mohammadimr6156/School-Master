@@ -308,6 +308,7 @@
                 <div class="flex-between card" style="padding:15px 24px; margin-bottom: 15px;">
                     <h2>سیستم برنامه‌ریزی و چاپ</h2>
                     <div style="display:flex; gap:15px; align-items: center;">
+                        <button class="btn btn-danger" id="btn_clear_tt" onclick="clearTimetable()">🗑️ پاک کردن کل جدول</button>
                         <button class="btn btn-success" id="btn_auto_sched" onclick="runAutoScheduler()">✨ چیدمان خودکار</button>
                         <button class="btn btn-primary" onclick="exportToExcel()">📥 خروجی اکسل</button>
                         <select id="tt_view_mode" onchange="switchTTMode()">
@@ -330,7 +331,6 @@
                                 <!-- Rendered via JS -->
                             </table>
                         </div>
-                        
                         <!-- Cards Drawer -->
                         <div class="drawer" id="cards_drawer">
                             <div class="drawer-header">کارت‌های آماده جایگذاری <span class="chip primary" id="cards_count">0</span></div>
@@ -553,11 +553,13 @@
             if(mode === 'overall_edit') {
                 vEdit.style.display = 'flex'; vRead.style.display = 'none';
                 document.getElementById('btn_auto_sched').style.display = 'inline-flex';
+                document.getElementById('btn_clear_tt').style.display = 'inline-flex';
                 renderMasterGrid();
                 renderCardsDrawer();
             } else {
                 vEdit.style.display = 'none'; vRead.style.display = 'flex';
                 document.getElementById('btn_auto_sched').style.display = 'none';
+                document.getElementById('btn_clear_tt').style.display = 'none';
                 renderReadonlyViews(mode);
             }
         }
@@ -623,7 +625,7 @@
 
                 const reqBells = calculateBells(crs.hours);
                 const tts = db.timetable.filter(t=>t.allocationId===alloc.id);
-                const placedBells = ttts.reduce((s,t) => s + (t.weekType==='both'?1:0.5), 0);
+                const placedBells = tts.reduce((s,t) => s + (t.weekType==='both'?1:0.5), 0);
                 const rem = reqBells - placedBells;
 
                 const isLocked = rem <= 0;
@@ -778,18 +780,26 @@
                 db.settings.days.forEach(d => {
                     html += `<tr><td><b>${d}</b></td>`;
                     for(let p=1; p<=db.settings.periodsCount; p++) {
-                        let filterFn = t => t.day===d && t.period===p && (mode==='class_view' ? db.allocations.find(a=>a.id===t.allocationId).classId===target.id : db.allocations.find(a=>a.id===t.allocationId).teacherId===target.id);
+                        let filterFn = t => {
+                            if(t.day !== d || t.period !== p) return false;
+                            const a = db.allocations.find(a=>a.id===t.allocationId);
+                            if(!a) return false;
+                            return mode==='class_view' ? a.classId===target.id : a.teacherId===target.id;
+                        };
                         const tts = db.timetable.filter(filterFn);
                         if(tts.length===0) html += `<td>-</td>`;
                         else {
                             let cellHtml = tts.map(t => {
                                 const a = db.allocations.find(x=>x.id===t.allocationId);
+                                if(!a) return '';
                                 const crs = db.courses.find(c=>c.id===a.courseId);
-                                const sub = mode==='class_view' ? db.teachers.find(tch=>tch.id===a.teacherId).name : db.classes.find(c=>c.id===a.classId).name;
+                                const teacher = db.teachers.find(tch=>tch.id===a.teacherId);
+                                const classs = db.classes.find(c=>c.id===a.classId);
+                                const sub = mode==='class_view' ? (teacher?.name||'?') : (classs?.name||'?');
                                 const loc = db.locations.find(l=>l.id===t.locationId);
                                 let wStr = t.weekType==='even' ? '(زوج)' : t.weekType==='odd' ? '(فرد)' : '';
-                                return `<div><b>${crs.name} ${wStr}</b><br><small>${sub}</small><br><small style="color:var(--primary)">${loc?loc.name:'-'}</small></div>`;
-                            }).join('<hr style="margin:5px 0; border:0; border-top:1px solid rgba(255,255,255,0.1)">');
+                                return `<div><b>${crs?.name||'?'} ${wStr}</b><br><small>${sub}</small><br><small style="color:var(--primary)">${loc?loc.name:'-'}</small></div>`;
+                            }).filter(Boolean).join('<hr style="margin:5px 0; border:0; border-top:1px solid rgba(255,255,255,0.1)">');
                             html += `<td>${cellHtml}</td>`;
                         }
                     }
@@ -814,7 +824,16 @@
             }
         }
 
-        /* --- Auto Scheduler Algorithm --- */
+        // --- Auto Scheduler Algorithm ---
+        async function clearTimetable() {
+            if(!confirm('آیا مطمئن هستید که می‌خواهید کل برنامه جدول پاک شود و همه کارت‌ها به پنل برگردند؟')) return;
+            db.timetable = [];
+            await window.pywebview.api.save_timetable(db.timetable);
+            renderMasterGrid(); 
+            renderCardsDrawer();
+            alert('جدول با موفقیت پاک شد و کارت‌ها برگشتند.');
+        }
+
         async function runAutoScheduler() {
             if(!confirm('برنامه قبلی پاک شده و از نو چیده می‌شود. مطمئن هستید؟')) return;
             db.timetable = [];

@@ -5,4 +5,4 @@ for cls in data['classes']:
         for p in range(1, data['settings']['periodsCount']+1):
             tts = [t for t in data['timetable'] if t['day'] == d and t['period'] == p and next((a for a in data['allocations'] if a['id'] == t['allocationId']), {}).get('classId') == cls['id']]
             if tts:
-                print(f"Found! {cls['name']} {d} {p}")
+                print("Found", cls['id'], p)

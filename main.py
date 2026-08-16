@@ -2,7 +2,7 @@ import webview
 import json
 from pathlib import Path
 
-DATA_FILE = Path('data.json')
+DATA_FILE = Path(__file__).parent / 'data.json'
 
 def get_default_data():
     return {
