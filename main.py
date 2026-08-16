@@ -140,14 +140,14 @@ class Api:
             
             # Helper to style headers
             def style_header(cell):
-                cell.font = Font(bold=True, name='Vazirmatn')
+                cell.font = Font(bold=True, name='Tahoma')
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
                 thin = Side(border_style="thin", color="000000")
                 cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
 
             def style_cell(cell, is_even=False, is_odd=False):
-                cell.font = Font(name='Vazirmatn')
+                cell.font = Font(name='Tahoma')
                 cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
                 if is_even:
                     cell.fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # light green
@@ -227,7 +227,7 @@ class Api:
             r_idx = 1
             for cls in data['classes']:
                 ws_classes.cell(row=r_idx, column=1, value=f"کلاس: {cls['name']} ({cls['major']})")
-                ws_classes.cell(row=r_idx, column=1).font = Font(bold=True, size=14, name='Vazirmatn')
+                ws_classes.cell(row=r_idx, column=1).font = Font(bold=True, size=14, name='Tahoma')
                 r_idx += 1
                 
                 ws_classes.cell(row=r_idx, column=1, value="روز")
@@ -261,7 +261,7 @@ class Api:
             r_idx = 1
             for tch in data['teachers']:
                 ws_teachers.cell(row=r_idx, column=1, value=f"دبیر: {tch['name']}")
-                ws_teachers.cell(row=r_idx, column=1).font = Font(bold=True, size=14, name='Vazirmatn')
+                ws_teachers.cell(row=r_idx, column=1).font = Font(bold=True, size=14, name='Tahoma')
                 r_idx += 1
                 
                 ws_teachers.cell(row=r_idx, column=1, value="روز")
