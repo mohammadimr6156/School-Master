@@ -22,3 +22,7 @@ python main.py
 - `main.py`: هسته اصلی بک‌اند (کنترل پنجره و ارتباط با سیستم فایل).
 - `index.html`: شامل تمام کدهای فرانت‌اند (HTML/CSS/JS) که رابط کاربری جذاب سیستم را می‌سازد.
 - `data.json`: فایل دیتابیس (پس از اولین اجرا به صورت خودکار ساخته می‌شود).
+
+## Developer
+- Name: MohammadiMR6156
+- Email: mohammadimr6156@gmail.com

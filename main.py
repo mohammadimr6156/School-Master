@@ -7,7 +7,7 @@ from pathlib import Path
 # Fix taskbar icon for Windows
 if sys.platform.startswith('win'):
     try:
-        myappid = 'BlueFalcon.SchoolMaster.1.1'
+        myappid = 'MohammadiMR6156.SchoolMaster.1.1'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception:
         pass
