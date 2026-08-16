@@ -1,7 +1,7 @@
 # School Master 🏫
 ### سیستم جامع برنامه‌ریزی مدرسه
 
-![Version](https://img.shields.io/badge/Version-v1.1-007AFF?style=flat-square)
+![Version](https://img.shields.io/badge/Version-v1.2-007AFF?style=flat-square)
 
 سیستم هوشمند زمان‌بندی و برنامه‌ریزی یکپارچه مدارس با رابط کاربری مدرن (Glassmorphism) و قابلیت چیدمان خودکار (Auto-Scheduler).
 

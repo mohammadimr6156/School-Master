@@ -2,6 +2,12 @@
 
 All notable changes to **School Master** will be documented in this file.
 
+## [v1.2] - 2026-08-17
+### Changed
+- Removed external Google Fonts dependencies (Vazirmatn) and switched to local system fonts (Segoe UI, Tahoma) to make the application fully functional without an internet connection.
+- Updated Excel export to use Tahoma instead of Vazirmatn for reliable fallback.
+- Updated README typography.
+
 ## [v1.1] - 2026-08-17
 ### Added
 - Prepared application for `.exe` packaging using PyInstaller.
