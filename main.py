@@ -1,8 +1,26 @@
 import webview
 import json
+import sys
+import ctypes
 from pathlib import Path
 
-DATA_FILE = Path(__file__).parent / 'data.json'
+# Fix taskbar icon for Windows
+if sys.platform.startswith('win'):
+    try:
+        myappid = 'BlueFalcon.SchoolMaster.1.1'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
+
+# Setup paths for PyInstaller compatibility
+if getattr(sys, 'frozen', False):
+    application_path = Path(sys.executable).parent
+    bundle_dir = Path(sys._MEIPASS)
+else:
+    application_path = Path(__file__).parent
+    bundle_dir = Path(__file__).parent
+
+DATA_FILE = application_path / 'data.json'
 
 def get_default_data():
     return {
@@ -83,6 +101,26 @@ class Api:
         data = self._read_data()
         data['timetable'] = timetable
         self._write_data(data)
+
+    def backup_data(self):
+        try:
+            import shutil
+            backup_path = DATA_FILE.parent / 'data.backup.json'
+            shutil.copy2(DATA_FILE, backup_path)
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+
+    def restore_backup(self):
+        try:
+            import shutil
+            backup_path = DATA_FILE.parent / 'data.backup.json'
+            if not backup_path.exists():
+                return {'success': False, 'message': 'فایل بک‌آپ یافت نشد.'}
+            shutil.copy2(backup_path, DATA_FILE)
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
         
     def export_to_excel(self, data):
         try:
@@ -263,8 +301,7 @@ class Api:
 if __name__ == '__main__':
     api = Api()
     
-    base_dir = Path(__file__).parent
-    html_file = base_dir / 'index.html'
+    html_file = bundle_dir / 'index.html'
     
     if not html_file.exists():
         with open(html_file, 'w', encoding='utf-8') as f:

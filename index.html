@@ -155,6 +155,41 @@
             .placed-item { border: 1px solid #999; background: #eee !important; color: black; }
             .placed-item small { color: #555; }
         }
+
+        /* Toast System */
+        #toast-container { position:fixed; bottom:24px; left:24px; z-index:9999; display:flex; flex-direction:column-reverse; gap:10px; }
+        .toast { padding:12px 20px; border-radius:10px; font-size:0.875rem; font-weight:600; min-width:260px; max-width:380px; display:flex; align-items:center; gap:10px; backdrop-filter:blur(16px); border:1px solid; box-shadow:0 8px 24px rgba(0,0,0,0.3); animation:toastIn 0.3s ease; }
+        .toast.removing { animation:toastOut 0.3s ease forwards; }
+        .toast.success { background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.45); color:#34d399; }
+        .toast.error   { background:rgba(239,68,68,0.18);  border-color:rgba(239,68,68,0.45);  color:#f87171; }
+        .toast.warning { background:rgba(245,158,11,0.18); border-color:rgba(245,158,11,0.45); color:#fbbf24; }
+        .toast.info    { background:rgba(59,130,246,0.18); border-color:rgba(59,130,246,0.45); color:#60a5fa; }
+        @keyframes toastIn  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes toastOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(20px)} }
+
+        /* Progress Bar */
+        .progress-wrap { display:flex; align-items:center; gap:12px; padding:10px 0; }
+        .progress-track { flex:1; background:rgba(255,255,255,0.07); border-radius:999px; height:8px; overflow:hidden; }
+        .progress-fill { height:100%; border-radius:999px; transition:width 0.5s ease, background-color 0.5s ease; }
+        .progress-label { font-size:0.8rem; color:var(--text-muted); white-space:nowrap; }
+
+        /* Conflict cell */
+        td.has-conflict { box-shadow:inset 0 0 0 2px var(--danger) !important; }
+
+        /* Edit button */
+        .btn-edit { background:rgba(59,130,246,0.1); color:var(--primary); border-color:rgba(59,130,246,0.3); }
+        .btn-edit:hover { background:var(--primary); color:#fff; }
+
+        /* Teacher load badges */
+        .load-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; }
+        .load-ok    { background:rgba(16,185,129,0.2); color:#34d399; }
+        .load-over  { background:rgba(245,158,11,0.2); color:#fbbf24; }
+        .load-under { background:rgba(239,68,68,0.2);  color:#f87171; }
+
+        /* Card filter */
+        .drawer-filter { padding:0 15px 10px; }
+        .drawer-filter input { width:100%; background:rgba(15,23,42,0.6); border:1px solid var(--glass-border); color:var(--text-main); padding:8px 12px; border-radius:8px; outline:none; font-size:0.85rem; }
+        .drawer-filter input:focus { border-color:var(--primary); }
     </style>
 </head>
 <body>
@@ -262,7 +297,6 @@
                 </div>
             </div>
 
-            <!-- 5. Teachers -->
             <div data-tab-content="teachers">
                 <div class="card">
                     <h2>تعریف دبیر</h2>
@@ -281,6 +315,13 @@
                     <table>
                         <thead><tr><th>نام</th><th>نوع</th><th>موظف</th><th>عدم حضور</th><th>عملیات</th></tr></thead>
                         <tbody id="tb_teachers"></tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h2>📊 گزارش بار دبیران</h2>
+                    <table>
+                        <thead><tr><th>نام</th><th>موظف (ساعت)</th><th>تخصیصیافته</th><th>چیدهشده</th><th>وضعیت</th></tr></thead>
+                        <tbody id="tb_teacher_load"></tbody>
                     </table>
                 </div>
             </div>
@@ -305,9 +346,15 @@
 
             <!-- 7. Unified Timetable & Reports -->
             <div data-tab-content="timetable">
-                <div class="flex-between card" style="padding:15px 24px; margin-bottom: 15px;">
-                    <h2>سیستم برنامه‌ریزی و چاپ</h2>
-                    <div style="display:flex; gap:15px; align-items: center;">
+                <div class="flex-between card" style="padding:15px 24px; margin-bottom: 15px; flex-wrap:wrap; gap:10px;">
+                    <div style="flex:1; min-width:200px;">
+                        <h2 style="margin-bottom:8px;">سیستم برنامه‌ریزی و چاپ</h2>
+                        <div class="progress-wrap">
+                            <div class="progress-track"><div class="progress-fill" id="progress_fill" style="width:0%"></div></div>
+                            <span class="progress-label" id="progress_label">آماده برای برنامه‌ریزی</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items: center; flex-wrap:wrap;">
                         <button class="btn btn-danger" id="btn_clear_tt" onclick="clearTimetable()">🗑️ پاک کردن کل جدول</button>
                         <button class="btn btn-success" id="btn_auto_sched" onclick="runAutoScheduler()">✨ چیدمان خودکار</button>
                         <button class="btn btn-primary" onclick="exportToExcel()">📥 خروجی اکسل</button>
@@ -334,9 +381,8 @@
                         <!-- Cards Drawer -->
                         <div class="drawer" id="cards_drawer">
                             <div class="drawer-header">کارت‌های آماده جایگذاری <span class="chip primary" id="cards_count">0</span></div>
-                            <div class="drawer-content" id="cards_container">
-                                <!-- Cards rendered via JS -->
-                            </div>
+                            <div class="drawer-filter"><input type="text" id="card_filter" placeholder="جستجو درس/کلاس/دبیر..." oninput="filterCards()"></div>
+                            <div class="drawer-content" id="cards_container"></div>
                         </div>
                     </div>
                 </div>
@@ -352,7 +398,6 @@
         <div class="card modal">
             <h2 id="drop_modal_title">تایید جایگذاری درس</h2>
             <div style="margin-top:20px; font-size:0.9rem;" id="drop_modal_info"></div>
-            
             <div class="form-group mt-4" id="drop_week_type_group">
                 <label>نوع هفته (نیاز به نیم‌زنگ چرخشی)</label>
                 <select id="drop_week_type">
@@ -360,18 +405,43 @@
                     <option value="odd">فقط هفته فرد</option>
                 </select>
             </div>
-            
             <div class="form-group mt-4">
                 <label>مکان برگزاری</label>
                 <select id="drop_location"></select>
             </div>
-            
             <div class="flex-between mt-4">
                 <button class="btn btn-danger" onclick="closeDropModal()">انصراف</button>
                 <button class="btn btn-success" onclick="confirmDrop()">تایید و ثبت</button>
             </div>
         </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirm_modal">
+        <div class="card modal" style="max-width:400px; text-align:center;">
+            <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+            <p id="confirm_msg" style="font-size:1rem; line-height:1.7; color:var(--text-main);"></p>
+            <div class="flex-between mt-4" style="justify-content:center; gap:20px;">
+                <button class="btn" onclick="_resolveConfirm(false)">انصراف</button>
+                <button class="btn btn-danger" onclick="_resolveConfirm(true)">تأیید</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit_modal">
+        <div class="card modal" style="width:560px; max-width:95vw;">
+            <h2 id="edit_modal_title">ویرایش</h2>
+            <div id="edit_modal_body" style="margin-top:15px;"></div>
+            <div class="flex-between mt-4">
+                <button class="btn btn-danger" onclick="closeEditModal()">انصراف</button>
+                <button class="btn btn-primary" onclick="saveEdit()">دزخیره تغییرات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <script>
         let db = {
@@ -389,7 +459,7 @@
                 if(data) db = data;
                 if(!db.locations) db.locations = [];
                 initUI();
-            } catch (err) { console.error(err); alert("خطا در ارتباط با سرور"); }
+            } catch (err) { console.error(err); showToast('خطا در ارتباط با سرور', 'error'); }
         });
 
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -407,7 +477,7 @@
             if(tab === 'locations') renderLocations();
             if(tab === 'classes') { renderClasses(); updateClassSelects(); }
             if(tab === 'courses') { renderCourses(); renderCourseClassesCheckboxes(); }
-            if(tab === 'teachers') { renderTeachers(); renderTeacherMatrixInput(); }
+            if(tab === 'teachers') { renderTeachers(); renderTeacherLoad(); renderTeacherMatrixInput(); }
             if(tab === 'allocation') loadAllocationTeacherSel();
             if(tab === 'timetable') switchTTMode();
         }
@@ -415,7 +485,11 @@
         function initUI() { refreshTab('settings'); }
 
         async function resetAll() {
-            if(confirm('حذف کامل تمام اطلاعات؟')) { await window.pywebview.api.clear_all_data(); location.reload(); }
+            const ok = await showConfirm('حذف کامل تمام اطلاعات؟ این عمل برگشت‌ناپذیر است.');
+            if(!ok) return;
+            await window.pywebview.api.backup_data();
+            await window.pywebview.api.clear_all_data();
+            location.reload();
         }
 
         /* ------------------ 1-6. Standard CRUD Logic ------------------ */
@@ -433,17 +507,28 @@
             db.settings.hoursPerPeriod = parseFloat(document.getElementById('set_hours').value) || 2;
             const chk = Array.from(document.getElementById('set_days_container').querySelectorAll('input:checked'));
             db.settings.days = chk.map(i => i.value);
-            await window.pywebview.api.save_settings({ settings: db.settings }); alert('ذخیره شد.');
+            await window.pywebview.api.save_settings({ settings: db.settings });
+            showToast('تنظیمات ذخیره شد.');
         }
 
         async function addLocation() {
-            const name = document.getElementById('loc_name').value.trim(); const type = document.getElementById('loc_type').value;
-            if(!name) return; db.locations.push({ id: uid(), name, type });
-            await window.pywebview.api.save_locations(db.locations); document.getElementById('loc_name').value = ''; renderLocations();
+            const name = document.getElementById('loc_name').value.trim();
+            const type = document.getElementById('loc_type').value;
+            if(!name) return showToast('نام مکان الزامی است', 'error');
+            db.locations.push({ id: uid(), name, type });
+            await window.pywebview.api.save_locations(db.locations);
+            document.getElementById('loc_name').value = '';
+            renderLocations();
+            showToast('مکان ثبت شد');
         }
         function renderLocations() {
             const tb = document.getElementById('tb_locations'); tb.innerHTML = '';
-            db.locations.forEach(l => { tb.innerHTML += `<tr><td>${l.name}</td><td>${l.type||'عادی'}</td><td><button class="btn btn-danger" onclick="delObj('locations','${l.id}')">حذف</button></td></tr>`; });
+            db.locations.forEach(l => {
+                tb.innerHTML += `<tr><td>${l.name}</td><td>${l.type||'عادی'}</td><td style="display:flex;gap:6px;">
+                    <button class="btn btn-edit" onclick="editLocation('${l.id}')">✏️ ویرایش</button>
+                    <button class="btn btn-danger" onclick="delObj('locations','${l.id}')">🗑️</button>
+                </td></tr>`;
+            });
         }
 
         function updateClassSelects() {
@@ -459,16 +544,25 @@
             if(el.value === '_new_') { const val = prompt('عنوان جدید:'); if(val && val.trim()) { db[listName].push(val.trim()); await window.pywebview.api.save_settings({ [listName]: db[listName] }); updateClassSelects(); el.value = val.trim(); } else el.selectedIndex = 0; }
         }
         async function addClass() {
-            const name = document.getElementById('cls_name').value.trim(); const grade = document.getElementById('cls_grade').value; const major = document.getElementById('cls_major').value; const defaultLocationId = document.getElementById('cls_def_loc').value;
-            if(!name || !grade || !major || grade==='_new_' || major==='_new_') return alert('کامل کنید');
+            const name = document.getElementById('cls_name').value.trim();
+            const grade = document.getElementById('cls_grade').value;
+            const major = document.getElementById('cls_major').value;
+            const defaultLocationId = document.getElementById('cls_def_loc').value;
+            if(!name || !grade || !major || grade==='_new_' || major==='_new_') return showToast('لطفاً همه فیلدها را پر کنید', 'error');
             db.classes.push({ id: uid(), name, grade, major, defaultLocationId });
-            await window.pywebview.api.save_classes(db.classes); document.getElementById('cls_name').value = ''; renderClasses();
+            await window.pywebview.api.save_classes(db.classes);
+            document.getElementById('cls_name').value = '';
+            renderClasses();
+            showToast('کلاس ثبت شد');
         }
         function renderClasses() {
             const tb = document.getElementById('tb_classes'); tb.innerHTML = '';
             db.classes.forEach(c => {
                 const loc = db.locations.find(l=>l.id===c.defaultLocationId);
-                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.grade}</td><td>${c.major}</td><td>${loc?loc.name:'-'}</td><td><button class="btn btn-danger" onclick="delObj('classes','${c.id}')">حذف</button></td></tr>`;
+                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.grade}</td><td>${c.major}</td><td>${loc?loc.name:'-'}</td><td style="display:flex;gap:6px;">
+                    <button class="btn btn-edit" onclick="editClass('${c.id}')">✏️ ویرایش</button>
+                    <button class="btn btn-danger" onclick="delObj('classes','${c.id}')">🗑️</button>
+                </td></tr>`;
             });
         }
 
@@ -477,16 +571,26 @@
             db.classes.forEach(cls => { c.innerHTML += `<label class="check-item"><input type="checkbox" value="${cls.id}"> کلاس ${cls.name} (${cls.major})</label>`; });
         }
         async function addCourse() {
-            const name = document.getElementById('crs_name').value.trim(); const hours = parseFloat(document.getElementById('crs_hours').value); const requiredLocationType = document.getElementById('crs_req_loc_type').value; const chk = Array.from(document.getElementById('crs_classes_container').querySelectorAll('input:checked'));
-            if(!name || chk.length===0) return alert('نام و حداقل یک کلاس نیاز است');
+            const name = document.getElementById('crs_name').value.trim();
+            const hours = parseFloat(document.getElementById('crs_hours').value);
+            const requiredLocationType = document.getElementById('crs_req_loc_type').value;
+            const chk = Array.from(document.getElementById('crs_classes_container').querySelectorAll('input:checked'));
+            if(!name || chk.length===0) return showToast('نام و حداقل یک کلاس الزامی است', 'error');
             db.courses.push({ id: uid(), name, hours, requiredLocationType, classes: chk.map(i=>i.value) });
-            await window.pywebview.api.save_courses(db.courses); document.getElementById('crs_name').value = ''; chk.forEach(i=>i.checked=false); renderCourses();
+            await window.pywebview.api.save_courses(db.courses);
+            document.getElementById('crs_name').value = '';
+            chk.forEach(i=>i.checked=false);
+            renderCourses();
+            showToast('درس ثبت شد');
         }
         function renderCourses() {
             const tb = document.getElementById('tb_courses'); tb.innerHTML = '';
             db.courses.forEach(c => {
                 const clsNames = c.classes.map(id => db.classes.find(x=>x.id===id)?.name || '?').join('، ');
-                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.hours}</td><td>${c.requiredLocationType||'پیش‌فرض'}</td><td>${clsNames}</td><td><button class="btn btn-danger" onclick="delObj('courses','${c.id}')">حذف</button></td></tr>`;
+                tb.innerHTML += `<tr><td>${c.name}</td><td>${c.hours}</td><td>${c.requiredLocationType||'پیش‌فرض'}</td><td>${clsNames}</td><td style="display:flex;gap:6px;">
+                    <button class="btn btn-edit" onclick="editCourse('${c.id}')">✏️ ویرایش</button>
+                    <button class="btn btn-danger" onclick="delObj('courses','${c.id}')">🗑️</button>
+                </td></tr>`;
             });
         }
 
@@ -500,13 +604,46 @@
             if(idx > -1) { tchTempNotAvail.splice(idx,1); el.classList.remove('unavailable'); } else { tchTempNotAvail.push(k); el.classList.add('unavailable'); }
         }
         async function addTeacher() {
-            const name = document.getElementById('tch_name').value.trim(); if(!name) return; const type = document.getElementById('tch_type').value; const req = parseFloat(document.getElementById('tch_req').value) || 24;
+            const name = document.getElementById('tch_name').value.trim();
+            if(!name) return showToast('نام دبیر الزامی است', 'error');
+            const type = document.getElementById('tch_type').value;
+            const req = parseFloat(document.getElementById('tch_req').value) || 24;
             db.teachers.push({ id: uid(), name, type, req, prefs: { notAvailable: [...tchTempNotAvail] } });
-            await window.pywebview.api.save_teachers(db.teachers); document.getElementById('tch_name').value = ''; renderTeacherMatrixInput(); renderTeachers();
+            await window.pywebview.api.save_teachers(db.teachers);
+            document.getElementById('tch_name').value = '';
+            renderTeacherMatrixInput();
+            renderTeachers();
+            renderTeacherLoad();
+            showToast('دبیر ثبت شد');
         }
         function renderTeachers() {
             const tb = document.getElementById('tb_teachers'); tb.innerHTML = '';
-            db.teachers.forEach(t => { tb.innerHTML += `<tr><td>${t.name}</td><td>${t.type}</td><td>${t.req}</td><td>${t.prefs.notAvailable?t.prefs.notAvailable.length:0} زنگ</td><td><button class="btn btn-danger" onclick="delObj('teachers','${t.id}')">حذف</button></td></tr>`; });
+            db.teachers.forEach(t => {
+                tb.innerHTML += `<tr><td>${t.name}</td><td>${t.type}</td><td>${t.req}</td><td>${t.prefs.notAvailable?t.prefs.notAvailable.length:0} زنگ</td><td style="display:flex;gap:6px;">
+                    <button class="btn btn-edit" onclick="editTeacher('${t.id}')">✏️ ویرایش</button>
+                    <button class="btn btn-danger" onclick="delObj('teachers','${t.id}')">🗑️</button>
+                </td></tr>`;
+            });
+        }
+        function renderTeacherLoad() {
+            const tb = document.getElementById('tb_teacher_load');
+            if(!tb) return;
+            tb.innerHTML = '';
+            db.teachers.forEach(t => {
+                const allocs = db.allocations.filter(a=>a.teacherId===t.id);
+                const assignedH = allocs.reduce((s,a) => { const c=db.courses.find(x=>x.id===a.courseId); return s+(c?c.hours:0); }, 0);
+                const placedH = allocs.reduce((s,a) => {
+                    const c = db.courses.find(x=>x.id===a.courseId); if(!c) return s;
+                    const bells = db.timetable.filter(tt=>tt.allocationId===a.id).reduce((ss,tt)=>ss+(tt.weekType==='both'?1:0.5),0);
+                    return s + bells * db.settings.hoursPerPeriod;
+                }, 0);
+                const diff = assignedH - t.req;
+                let cls, st;
+                if(Math.abs(diff) < 0.6) { cls='load-ok'; st='✅ تکمیل'; }
+                else if(diff > 0) { cls='load-over'; st=`⚠️ +${diff} اضافه`; }
+                else { cls='load-under'; st=`❌ ${Math.abs(diff)} کمبود`; }
+                tb.innerHTML += `<tr><td>${t.name}</td><td>${t.req}</td><td>${assignedH}</td><td>${placedH}</td><td><span class="load-badge ${cls}">${st}</span></td></tr>`;
+            });
         }
 
         function loadAllocationTeacherSel() {
@@ -533,7 +670,8 @@
         async function delAlloc(id) { db.allocations = db.allocations.filter(a=>a.id!==id); db.timetable = db.timetable.filter(t=>t.allocationId!==id); await window.pywebview.api.save_allocations(db.allocations); await window.pywebview.api.save_timetable(db.timetable); loadAllocationView(); }
 
         async function delObj(table, id) {
-            if(!confirm('حذف کامل؟')) return;
+            const ok = await showConfirm('آیا اطمینان دارید این مورد حذف شود؟');
+            if(!ok) return;
             db[table] = db[table].filter(x => x.id !== id);
             if(table==='locations') { db.classes.forEach(c => { if(c.defaultLocationId===id) c.defaultLocationId=null; }); db.timetable.forEach(t => { if(t.locationId===id) t.locationId=null; }); await window.pywebview.api.save_classes(db.classes); }
             if(table==='classes') { db.courses.forEach(c => c.classes = c.classes.filter(cid => cid !== id)); db.allocations = db.allocations.filter(a => a.classId !== id); await window.pywebview.api.save_courses(db.courses); }
@@ -541,6 +679,7 @@
             if(table==='teachers') db.allocations = db.allocations.filter(a => a.teacherId !== id);
             const validAllocIds = db.allocations.map(a => a.id); db.timetable = db.timetable.filter(t => validAllocIds.includes(t.allocationId));
             await window.pywebview.api[`save_${table}`](db[table]); await window.pywebview.api.save_allocations(db.allocations); await window.pywebview.api.save_timetable(db.timetable);
+            showToast('حذف شد', 'warning');
             refreshTab(table);
         }
 
@@ -572,6 +711,21 @@
         // --- Render Master Grid (Editable) ---
         function renderMasterGrid() {
             const m = document.getElementById('master_grid');
+
+            // Pre-compute conflict cells (same teacher, same slot, different class)
+            const conflictCells = new Set();
+            const isOvlp = (w1,w2) => (w1==='both'||w2==='both'||w1===w2);
+            db.timetable.forEach(t => {
+                const a = db.allocations.find(x=>x.id===t.allocationId);
+                if(!a) return;
+                const conflict = db.timetable.some(t2 => {
+                    if(t2.id===t.id) return false;
+                    const a2 = db.allocations.find(x=>x.id===t2.allocationId);
+                    return a2 && a2.teacherId===a.teacherId && t2.day===t.day && t2.period===t.period && isOvlp(t.weekType,t2.weekType);
+                });
+                if(conflict) conflictCells.add(`${a.classId}__${t.day}__${t.period}`);
+            });
+
             let html = `<thead><tr><th style="min-width:120px;">کلاس / روز</th>`;
             db.settings.days.forEach(d => { html += `<th colspan="${db.settings.periodsCount}">${d}</th>`; });
             html += `</tr><tr><th></th>`;
@@ -582,9 +736,9 @@
                 html += `<tr><td class="row-header">${cls.name}<br><small style="font-weight:normal">${cls.major}</small></td>`;
                 db.settings.days.forEach(d => {
                     for(let p=1; p<=db.settings.periodsCount; p++) {
-                        html += `<td class="drop-target" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${cls.id}', '${d}', ${p})">`;
-                        
-                        // Render placed items
+                        const hasConflict = conflictCells.has(`${cls.id}__${d}__${p}`);
+                        html += `<td class="drop-target${hasConflict?' has-conflict':''}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${cls.id}', '${d}', ${p})">` +
+                            (hasConflict ? '<small style="color:var(--danger);font-size:0.7rem">⚠️ تداخل</small>' : '');
                         const tts = db.timetable.filter(t => t.day == d && t.period == p && db.allocations.find(a=>a.id===t.allocationId)?.classId === cls.id);
                         tts.forEach(t => {
                             const alloc = db.allocations.find(a=>a.id===t.allocationId);
@@ -594,13 +748,7 @@
                             const loc = db.locations.find(l=>l.id===t.locationId);
                             const typeClass = t.weekType === 'even' ? 'even' : t.weekType === 'odd' ? 'odd' : '';
                             const wStr = t.weekType === 'even' ? '(زوج)' : t.weekType === 'odd' ? '(فرد)' : '';
-                            html += `
-                            <div class="placed-item ${typeClass}">
-                                <button class="del-btn" onclick="delTT('${t.id}')">✕</button>
-                                <b>${crs ? crs.name : '?'} ${wStr}</b>
-                                <small>${tch ? tch.name : '?'}</small>
-                                <small>${loc ? loc.name : '-'}</small>
-                            </div>`;
+                            html += `<div class="placed-item ${typeClass}"><button class="del-btn" onclick="delTT('${t.id}')">✕</button><b>${crs?crs.name:'?'} ${wStr}</b><small>${tch?tch.name:'?'}</small><small>${loc?loc.name:'-'}</small></div>`;
                         });
                         html += `</td>`;
                     }
@@ -609,6 +757,7 @@
             });
             html += `</tbody>`;
             m.innerHTML = html;
+            renderProgress();
         }
 
         // --- Drawer & Cards Logic ---
@@ -616,34 +765,51 @@
             const cont = document.getElementById('cards_container');
             cont.innerHTML = '';
             let activeCards = 0;
-
             db.allocations.forEach(alloc => {
                 const crs = db.courses.find(c=>c.id===alloc.courseId);
                 const cls = db.classes.find(c=>c.id===alloc.classId);
                 const tch = db.teachers.find(t=>t.id===alloc.teacherId);
                 if(!crs || !cls || !tch) return;
-
                 const reqBells = calculateBells(crs.hours);
                 const tts = db.timetable.filter(t=>t.allocationId===alloc.id);
                 const placedBells = tts.reduce((s,t) => s + (t.weekType==='both'?1:0.5), 0);
                 const rem = reqBells - placedBells;
-
-                const isLocked = rem <= 0;
-                if(isLocked) return;
+                if(rem <= 0) return;
                 activeCards++;
-
-                cont.innerHTML += `
-                <div class="alloc-card" 
-                     draggable="true" 
-                     ondragstart="onDragStart(event, '${alloc.id}', ${rem})">
+                cont.innerHTML += `<div class="alloc-card" draggable="true" ondragstart="onDragStart(event, '${alloc.id}', ${rem})">
                     <h4>${crs.name}</h4>
                     <p>کلاس: <b>${cls.name}</b></p>
                     <p>دبیر: <b>${tch.name}</b></p>
-                    <p>مانده: <span class="chip primary">${rem + ' زنگ'}</span></p>
+                    <p>مانده: <span class="chip primary">${rem} زنگ</span></p>
                 </div>`;
             });
-
             document.getElementById('cards_count').innerText = activeCards;
+            renderProgress();
+        }
+
+        function filterCards() {
+            const q = (document.getElementById('card_filter').value || '').toLowerCase();
+            document.querySelectorAll('#cards_container .alloc-card').forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function renderProgress() {
+            const fill = document.getElementById('progress_fill');
+            const label = document.getElementById('progress_label');
+            if(!fill || !label) return;
+            const total = db.allocations.length;
+            if(total === 0) { label.textContent = 'هیچ درسی تخصیص نیافته نشده'; fill.style.width='0%'; return; }
+            const placed = db.allocations.filter(a => {
+                const crs = db.courses.find(c=>c.id===a.courseId); if(!crs) return false;
+                const req = calculateBells(crs.hours);
+                const got = db.timetable.filter(t=>t.allocationId===a.id).reduce((s,t)=>s+(t.weekType==='both'?1:0.5),0);
+                return got >= req;
+            }).length;
+            const pct = Math.round(placed/total*100);
+            fill.style.width = pct+'%';
+            fill.style.backgroundColor = pct<50 ? '#ef4444' : pct<100 ? '#f59e0b' : '#10b981';
+            label.textContent = `${placed} از ${total} درس چیده شده (${pct}%)`;
         }
 
         /* --- Drag & Drop API --- */
@@ -666,20 +832,18 @@
             e.currentTarget.classList.remove('drag-over');
         }
 
-        function onDrop(e, targetClassId, day, period) {
+        async function onDrop(e, targetClassId, day, period) {
             e.preventDefault();
             e.currentTarget.classList.remove('drag-over');
-            
             if(!draggedAllocId) return;
             const allocId = draggedAllocId;
             const alloc = db.allocations.find(a=>a.id===allocId);
-            
-            if(alloc.classId !== targetClassId) {
-                alert("این درس متعلق به کلاس دیگری است!");
-                return;
+            if(alloc.classId !== targetClassId) { showToast('این درس متعلق به کلاس دیگری است!', 'error'); return; }
+            const tchPrefs = db.teachers.find(t=>t.id===alloc.teacherId)?.prefs;
+            if(tchPrefs?.notAvailable?.includes(`${day}-${period}`)) {
+                const ok = await showConfirm('دبیر در این زمان عدم حضور ثبت کرده است. مایلید ادامه دهید؟');
+                if(!ok) return;
             }
-
-            // Start Drop Flow
             processDrop(alloc, day, period, draggedRemBells);
         }
 
@@ -763,6 +927,8 @@
             await window.pywebview.api.save_timetable(db.timetable);
             renderMasterGrid();
             renderCardsDrawer();
+            renderTeacherLoad();
+            showToast('درس از جدول حذف شد', 'warning');
         }
 
         // --- Readonly Views (Printable) ---
@@ -813,29 +979,25 @@
         async function exportToExcel() {
             try {
                 const res = await window.pywebview.api.export_to_excel(db);
-                if(res.success) {
-                    alert(res.message);
-                } else {
-                    alert(res.message);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("خطا در ایجاد خروجی اکسل.");
-            }
+                if(res.success) showToast(res.message);
+                else showToast(res.message, 'error');
+            } catch (err) { console.error(err); showToast('خطا در ایجاد خروجی اکسل.', 'error'); }
         }
 
-        // --- Auto Scheduler Algorithm ---
         async function clearTimetable() {
-            if(!confirm('آیا مطمئن هستید که می‌خواهید کل برنامه جدول پاک شود و همه کارت‌ها به پنل برگردند؟')) return;
+            const ok = await showConfirm('آیا مطمئن هستید که می‌خواهید کل جدول پاک شود و همه کارت‌ها به پنل برگردند؟');
+            if(!ok) return;
+            await window.pywebview.api.backup_data();
             db.timetable = [];
             await window.pywebview.api.save_timetable(db.timetable);
-            renderMasterGrid(); 
-            renderCardsDrawer();
-            alert('جدول با موفقیت پاک شد و کارت‌ها برگشتند.');
+            renderMasterGrid(); renderCardsDrawer(); renderTeacherLoad();
+            showToast('جدول پاک شد و کارت‌ها برگشتند.', 'warning');
         }
 
         async function runAutoScheduler() {
-            if(!confirm('برنامه قبلی پاک شده و از نو چیده می‌شود. مطمئن هستید؟')) return;
+            const ok = await showConfirm('برنامه قبلی پاک شده و از نو چیده می‌شود. مطمئن هستید؟');
+            if(!ok) return;
+            await window.pywebview.api.backup_data();
             db.timetable = [];
             
             let items = [];
@@ -900,13 +1062,166 @@
             }
 
             if(solve(0)) {
-                db.timetable = state; alert("با موفقیت چیده شد!");
+                db.timetable = state;
+                showToast('برنامه با موفقیت چیده شد! ✅');
             } else {
-                alert("تداخلات مانع از چیدمان کامل شد. پیشنهاد: کاهش محدودیت‌های دبیران.");
+                showToast('تداخلات مانع از چیدمان کامل شد. پیشنهاد: کاهش محدودیت‌های دبیران.', 'warning');
             }
-            
             await window.pywebview.api.save_timetable(db.timetable);
-            renderMasterGrid(); renderCardsDrawer();
+            renderMasterGrid(); renderCardsDrawer(); renderTeacherLoad();
+        }
+
+        /* ============================================================
+           TOAST SYSTEM
+        ============================================================ */
+        function showToast(msg, type='success') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            const icons = {success:'✅', error:'❌', warning:'⚠️', info:'ℹ️'};
+            t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => { t.classList.add('removing'); setTimeout(()=>t.remove(), 350); }, 3000);
+        }
+
+        /* ============================================================
+           CONFIRM MODAL
+        ============================================================ */
+        let _confirmResolve = null;
+        function showConfirm(msg) {
+            return new Promise(resolve => {
+                document.getElementById('confirm_msg').innerText = msg;
+                document.getElementById('confirm_modal').style.display = 'flex';
+                _confirmResolve = resolve;
+            });
+        }
+        function _resolveConfirm(result) {
+            document.getElementById('confirm_modal').style.display = 'none';
+            if(_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+        }
+
+        /* ============================================================
+           EDIT MODAL SYSTEM
+        ============================================================ */
+        let _editCtx = null;
+        let _editTchMatrix = [];
+
+        function closeEditModal() {
+            document.getElementById('edit_modal').style.display = 'none';
+            _editCtx = null;
+        }
+
+        function editLocation(id) {
+            const l = db.locations.find(x=>x.id===id);
+            _editCtx = { type:'location', id };
+            document.getElementById('edit_modal_title').innerText = 'ویرایش مکان';
+            const opts = ['کلاس','کارگاه','آزمایشگاه','سایت','ورزشگاه'];
+            document.getElementById('edit_modal_body').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>نام مکان</label><input type="text" id="e_loc_name" value="${l.name}"></div>
+                    <div class="form-group"><label>نوع</label><select id="e_loc_type">${opts.map(o=>`<option value="${o}"${l.type===o?' selected':''}>${o}</option>`).join('')}</select></div>
+                </div>`;
+            document.getElementById('edit_modal').style.display = 'flex';
+        }
+
+        function editClass(id) {
+            const c = db.classes.find(x=>x.id===id);
+            _editCtx = { type:'class', id };
+            document.getElementById('edit_modal_title').innerText = 'ویرایش کلاس';
+            const gradeOpts = db.grades.map(g=>`<option value="${g}"${c.grade===g?' selected':''}>${g}</option>`).join('');
+            const majorOpts = db.majors.map(m=>`<option value="${m}"${c.major===m?' selected':''}>${m}</option>`).join('');
+            const locOpts = `<option value="">— فاقد مکان پیش‌فرض —</option>` + db.locations.map(l=>`<option value="${l.id}"${c.defaultLocationId===l.id?' selected':''}>${l.name} (${l.type})</option>`).join('');
+            document.getElementById('edit_modal_body').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>نام</label><input type="text" id="e_cls_name" value="${c.name}"></div>
+                    <div class="form-group"><label>پایه</label><select id="e_cls_grade">${gradeOpts}</select></div>
+                    <div class="form-group"><label>رشته</label><select id="e_cls_major">${majorOpts}</select></div>
+                    <div class="form-group"><label>مکان پیش‌فرض</label><select id="e_cls_loc">${locOpts}</select></div>
+                </div>`;
+            document.getElementById('edit_modal').style.display = 'flex';
+        }
+
+        function editCourse(id) {
+            const c = db.courses.find(x=>x.id===id);
+            _editCtx = { type:'course', id };
+            document.getElementById('edit_modal_title').innerText = 'ویرایش درس';
+            const locTypeOpts = ['پیش‌فرض','کارگاه','آزمایشگاه','سایت','ورزشگاه'].map(o=>`<option value="${o}"${c.requiredLocationType===o?' selected':''}>${o}</option>`).join('');
+            const clsChk = db.classes.map(cls=>`<label class="check-item"><input type="checkbox" value="${cls.id}" ${c.classes.includes(cls.id)?'checked':''}> کلاس ${cls.name} (${cls.major})</label>`).join('');
+            document.getElementById('edit_modal_body').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>نام درس</label><input type="text" id="e_crs_name" value="${c.name}"></div>
+                    <div class="form-group"><label>ساعت در هفته</label><input type="number" id="e_crs_hours" value="${c.hours}" min="0.5" step="0.5"></div>
+                    <div class="form-group"><label>نوع مکان</label><select id="e_crs_loc_type">${locTypeOpts}</select></div>
+                    <div class="form-group full"><label>کلاس‌ها:</label><div class="check-list">${clsChk}</div></div>
+                </div>`;
+            document.getElementById('edit_modal').style.display = 'flex';
+        }
+
+        function editTeacher(id) {
+            const t = db.teachers.find(x=>x.id===id);
+            _editCtx = { type:'teacher', id };
+            _editTchMatrix = [...(t.prefs.notAvailable||[])];
+            document.getElementById('edit_modal_title').innerText = 'ویرایش دبیر';
+            let matrixHtml = `<div class="tch-matrix" style="grid-template-columns:repeat(${db.settings.periodsCount},1fr)">`;
+            db.settings.days.forEach(d => { for(let p=1;p<=db.settings.periodsCount;p++) {
+                const k=`${d}-${p}`; const ua=_editTchMatrix.includes(k);
+                matrixHtml += `<div class="tch-cell${ua?' unavailable':''}" onclick="toggleEditTch('${k}')" id="etm_${k.replace(/[^a-z0-9]/gi,'_')}">${d[0]} ز${p}</div>`;
+            }});
+            matrixHtml += '</div>';
+            document.getElementById('edit_modal_body').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group"><label>نام</label><input type="text" id="e_tch_name" value="${t.name}"></div>
+                    <div class="form-group"><label>نوع</label><select id="e_tch_type"><option${t.type==='دبیر'?' selected':''}>دبیر</option><option${t.type==='هنرآموز'?' selected':''}>هنرآموز</option></select></div>
+                    <div class="form-group"><label>موظف (ساعت)</label><input type="number" id="e_tch_req" value="${t.req}"></div>
+                    <div class="form-group full"><label>عدم حضور:</label>${matrixHtml}</div>
+                </div>`;
+            document.getElementById('edit_modal').style.display = 'flex';
+        }
+        function toggleEditTch(k) {
+            const idx = _editTchMatrix.indexOf(k);
+            const el = document.getElementById('etm_'+k.replace(/[^a-z0-9]/gi,'_'));
+            if(idx>-1) { _editTchMatrix.splice(idx,1); el.classList.remove('unavailable'); }
+            else { _editTchMatrix.push(k); el.classList.add('unavailable'); }
+        }
+
+        async function saveEdit() {
+            if(!_editCtx) return;
+            const { type, id } = _editCtx;
+            if(type==='location') {
+                const name = document.getElementById('e_loc_name').value.trim();
+                const locType = document.getElementById('e_loc_type').value;
+                if(!name) return showToast('نام الزامی است', 'error');
+                const l = db.locations.find(x=>x.id===id); l.name=name; l.type=locType;
+                await window.pywebview.api.save_locations(db.locations);
+                showToast('مکان ویرایش شد'); closeEditModal(); renderLocations();
+            } else if(type==='class') {
+                const name = document.getElementById('e_cls_name').value.trim();
+                if(!name) return showToast('نام الزامی است', 'error');
+                const c = db.classes.find(x=>x.id===id);
+                c.name=name; c.grade=document.getElementById('e_cls_grade').value;
+                c.major=document.getElementById('e_cls_major').value;
+                c.defaultLocationId=document.getElementById('e_cls_loc').value;
+                await window.pywebview.api.save_classes(db.classes);
+                showToast('کلاس ویرایش شد'); closeEditModal(); renderClasses();
+            } else if(type==='course') {
+                const name = document.getElementById('e_crs_name').value.trim();
+                if(!name) return showToast('نام الزامی است', 'error');
+                const c = db.courses.find(x=>x.id===id);
+                c.name=name; c.hours=parseFloat(document.getElementById('e_crs_hours').value)||2;
+                c.requiredLocationType=document.getElementById('e_crs_loc_type').value;
+                c.classes=Array.from(document.querySelectorAll('#edit_modal_body input[type=checkbox]:checked')).map(i=>i.value);
+                await window.pywebview.api.save_courses(db.courses);
+                showToast('درس ویرایش شد'); closeEditModal(); renderCourses();
+            } else if(type==='teacher') {
+                const name = document.getElementById('e_tch_name').value.trim();
+                if(!name) return showToast('نام الزامی است', 'error');
+                const t = db.teachers.find(x=>x.id===id);
+                t.name=name; t.type=document.getElementById('e_tch_type').value;
+                t.req=parseFloat(document.getElementById('e_tch_req').value)||24;
+                t.prefs.notAvailable=[..._editTchMatrix];
+                await window.pywebview.api.save_teachers(db.teachers);
+                showToast('دبیر ویرایش شد'); closeEditModal(); renderTeachers(); renderTeacherLoad();
+            }
         }
     </script>
 </body>
